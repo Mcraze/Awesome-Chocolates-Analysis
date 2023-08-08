@@ -1,0 +1,149 @@
+-- How many tables are there in this awesome chocolates database?
+show tables;
+
+-- Show the description of the tables. What is within these tables?
+desc geo;
+desc people;
+desc products;
+desc sales;
+
+-- Show all data from sales table
+select * from sales;
+
+-- Show sales id, sales date, amount and boxes only
+select SPID, SaleDate, Amount, Boxes from sales;
+
+-- What is the amount per box? Show how much a single box costs
+select *, (Amount/Boxes) as Amt_Per_Box from sales;
+
+-- Show sales where amount is greater than 10000
+select * from sales where Amount > 10000;
+
+-- Sort the above query with lowest amount shown first
+select * from sales where Amount > 10000 order by Amount;
+
+-- Sort the above query with highest amount shown first
+select * from sales where Amount > 10000 order by Amount desc;
+
+-- Select the records where geo id is 1
+select * from sales where GeoId = 'G1';
+
+-- Select the records where geo id is 1 and order it by PID ascending but Amount descending
+select * from sales where GeoID = 'G1' order by PID, Amount desc;
+
+-- Show the records where Amount is more than 10000 and Year is 2022 and query them in descending order of Amount
+select * from sales where Amount > 10000 and year(SaleDate) = 2022 order by Amount desc;
+
+-- Find the sales where number of boxes is between 0 to 50
+select * from sales where Boxes between 0 and 50;
+
+-- Show all the sales records which have occured on Friday
+select SaleDate, Amount, Customers, Boxes from sales where weekday(SaleDate) = 4;
+
+-- Show all the records of People table
+select * from people;
+
+-- Show the details of people who belong to Delish or Jucies team
+select * from people where Team in ('Delish', 'Jucies');
+
+-- Show the records from people table where salesperson names begins with M
+select * from people where Salesperson like 'M%';
+
+-- Show the records where M is anywhere in the salesperson name
+select * from people where Salesperson like '%M%';
+
+-- Create an Amount Category column where Amount less than 1000 will be shown as 'under 1k'
+-- If the Amount is less than 5000 then show 'under 5k' and for more than 10000 show 'above 10k'
+select SaleDate, Amount,
+	case 
+		when Amount < 1000 then 'Under 1k'
+		when Amount < 5000 then 'Under 5k'
+        when Amount < 10000 then 'Under 10k'
+        else 'Above 10k'
+	end as Amount_Category
+from sales;
+
+-- Show the sales records with Salesperson name. Use sales and people tables
+select p.Salesperson, s.SaleDate, s.Amount, s.Customers, s.Boxes from sales as s inner join people as p on s.SPID = p.SPID;
+
+-- Now show the product names which are been sold in these sales.
+select s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category from sales as s left join products as p on s.PID = p.PID;
+
+-- Write a query to show the product sold along with sales details and Sales persons name
+select people.Salesperson, s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category 
+from sales as s join products as p on s.PID = p.PID
+join people on s.SPID = people.SPID
+order by Salesperson;
+
+-- In the above query filter the records where sales Amount is less than 500
+select people.Salesperson, s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category 
+from sales as s join products as p on s.PID = p.PID
+join people on s.SPID = people.SPID
+where s.Amount < 500
+order by s.Amount;
+
+-- Same from the above query select only the records of Delish Team where Amount is less than 500
+select people.Team, people.Salesperson, s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category 
+from sales as s join products as p on s.PID = p.PID
+join people on s.SPID = people.SPID
+where s.Amount < 500 and people.Team = 'Delish'
+order by s.Amount;
+
+-- Show the same data but where the Salesperson do not belong to any team (blank)
+select people.Salesperson, s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category 
+from sales as s join products as p on s.PID = p.PID
+join people on s.SPID = people.SPID
+where s.Amount < 500 and people.Team = ''
+order by s.Amount;
+
+-- Show the exact same data but the Salesperson should belong to either India or USA
+select g.Geo, pe.Salesperson, s.SaleDate, s.Amount, s.Boxes, p. Product, p.Category 
+from sales as s join products as p on s.PID = p.PID
+join people as pe on s.SPID = pe.SPID
+join geo as g on s.GeoID = g.GeoID
+where s.Amount < 500 and g.Geo in ('India','USA')
+order by s.Amount;
+
+-- Show total sales Amount generated and classify them by the GeoID. Show the GeoIDs locations along with Amount
+select g.GeoID, g.Geo, sum(s.Amount) as Amount 
+from sales as s join geo as g 
+on s.GeoID = g.GeoID 
+group by g.GeoID 
+order by g.GeoID;
+
+-- In the above example also show average Sales Amount and total Boxes of sales too
+select g.GeoID, g.Geo, sum(s.Amount) as Total_Amount, avg(s.Amount) as Average_Amount, sum(s.Boxes) as Total_Boxes 
+from sales as s join geo as g 
+on s.GeoID = g.GeoID 
+group by g.GeoID 
+order by g.GeoID;
+
+-- Show the Total Amount, Average Amount and Total Boxes generated by Teams
+select p.Team, sum(s.Amount) as Total_Amount, avg(s.Amount) as Average_Amount, sum(s.Boxes) as Total_Boxes 
+from sales as s join people as p
+on s.SPID = p.SPID 
+group by p.Team 
+order by sum(s.Amount) desc;
+
+-- Show the Total Amount, Average Amount and Total Boxes generated by Product Categories
+select p.Category, sum(s.Amount) as Total_Amount, avg(s.Amount) as Average_Amount, sum(s.Boxes) as Total_Boxes 
+from sales as s join products as p
+on s.PID = p.PID 
+group by p.Category 
+order by sum(s.Amount) desc;
+
+-- Show the Total Amount, Average Amount and Total Boxes generated by Product Categories and Teams combined
+select pro.Category, p.Team, sum(s.Amount) as Total_Amount, avg(s.Amount) as Average_Amount, sum(s.Boxes) as Total_Boxes 
+from sales as s join products as pro
+on s.PID = pro.PID 
+join people as p
+on s.SPID = p.SPID
+group by pro.Category, p.Team
+order by pro.Category, p.Team;
+
+-- Make a list of top 10 products by Amount
+select p.Product, sum(s.Amount) from sales as s join products as p
+on s.PID = p.PID
+group by p.Product
+order by sum(s.Amount) desc
+limit 10;
